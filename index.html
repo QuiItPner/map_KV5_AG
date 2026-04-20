@@ -753,26 +753,44 @@ map.on('mousemove', e => {
 //  USER LOCATION (GPS)
 // ─────────────────────────────────────────────
 let userMarker = null;
+let isTracking = false;
 
 function locateUser() {
-  map.locate({ setView: true, maxZoom: 16 });
+  if (!isTracking) {
+    // First click: start continuous tracking & center map
+    map.locate({ watch: true, setView: true, maxZoom: 16, enableHighAccuracy: true });
+    isTracking = true;
+    // highlight the button to show tracking is active
+    document.querySelector('.leaflet-control-locate').style.color = 'var(--accent)';
+  } else {
+    // Already tracking: just pan view back to user's real-time position
+    if (userMarker) {
+      map.flyTo(userMarker.getLatLng(), Math.max(map.getZoom(), 16), { duration: 0.5 });
+    }
+  }
 }
 
 map.on('locationfound', function(e) {
-  if (userMarker) {
-    map.removeLayer(userMarker);
+  if (!userMarker) {
+    // create marker on first find
+    const icon = L.divIcon({
+      className: 'user-loc-marker',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+    userMarker = L.marker(e.latlng, { icon: icon }).addTo(map)
+      .bindPopup('<b>Vị trí của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm');
+  } else {
+    // smoothly update marker position while user is moving
+    userMarker.setLatLng(e.latlng);
+    userMarker.setPopupContent('<b>Vị trí của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm');
   }
-  const icon = L.divIcon({
-    className: 'user-loc-marker',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7]
-  });
-  userMarker = L.marker(e.latlng, { icon: icon }).addTo(map)
-    .bindPopup('<b>Vị trí hiện tại của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm').openPopup();
 });
 
 map.on('locationerror', function(e) {
   alert("Không thể tìm thấy vị trí của bạn. Vui lòng bật vị trí (GPS) và thử lại.\nLỗi: " + e.message);
+  isTracking = false;
+  document.querySelector('.leaflet-control-locate').style.color = 'var(--text-main)';
 });
 
 // ─────────────────────────────────────────────
