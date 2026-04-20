@@ -153,6 +153,33 @@
     #layers::-webkit-scrollbar-track { background: transparent; }
     #layers::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+    /* KV region group header (KV5 / KV6) */
+    .kv-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px 6px;
+      margin-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+    .kv-group-header:first-child { border-top: none; margin-top: 0; }
+    .kv-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+    .kv-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     /* District header row */
     .district-header {
       display: flex;
@@ -433,6 +460,15 @@
       margin-bottom: 5px;
       font-size: 12px;
     }
+    .legend-kv {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 10px 0 4px;
+      padding-bottom: 2px;
+      border-bottom: 1px solid var(--border);
+    }
+    .legend-kv:first-of-type { margin-top: 4px; }
     .legend-dot {
       width: 14px;
       height: 14px;
@@ -471,6 +507,30 @@
       color: #fff;
       border-color: var(--accent);
     }
+
+    /* ── RESPONSIVE MOBILE ── */
+    @media (max-width: 768px) {
+      #sidebar { display: none !important; }
+      #toggle-sidebar { display: none !important; }
+      #topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        height: auto;
+        padding: 12px;
+        gap: 8px;
+      }
+      #topbar .spacer { display: none; }
+      .stat-badge {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-direction: row-reverse;
+      }
+      .stat-badge .lbl { margin-top: 0; }
+      #status-bar { left: 10px; bottom: 10px; right: 10px; justify-content: center; border-radius: 8px; }
+      #basemap-switcher { flex-wrap: wrap; padding-left: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -485,11 +545,11 @@
 <div id="topbar">
   <div>
     <div class="logo">🗺 Bản Đồ Cáp Quang GPON 2026</div>
-    <div class="subtitle">KV5 · An Giang – Khảo Sát</div>
+    <div class="subtitle">KV5 + KV6 · An Giang – Khảo Sát</div>
   </div>
   <div class="spacer"></div>
   <div class="stat-badge"><span class="val" id="stat-total">–</span><span class="lbl">Tuyến</span></div>
-  <div class="stat-badge"><span class="val" id="stat-sheets">6</span><span class="lbl">Khu vực</span></div>
+  <div class="stat-badge"><span class="val" id="stat-sheets">11</span><span class="lbl">Khu vực</span></div>
   <div class="stat-badge"><span class="val" id="stat-km">–</span><span class="lbl">Km 6FO</span></div>
 </div>
 
@@ -536,15 +596,38 @@
 // ─────────────────────────────────────────────
 //  CONFIGURATION
 // ─────────────────────────────────────────────
-const SHEET_CONFIG = {
-  'BẢNG TỔNG HỢP': { label: 'Tổng Hợp',  color: '#94a3b8', show: false },
-  'ACU_OK':         { label: 'An Châu',    color: '#e63946' },
-  'APU_OK':         { label: 'An Phú',     color: '#3b82f6' },
-  'CĐC_OK':         { label: 'Châu Đốc',  color: '#f97316' },
-  'CPU_OK':         { label: 'Châu Phú',   color: '#22c55e' },
-  'PTN_OK':         { label: 'Phú Tân',    color: '#a855f7' },
-  'TCU_OK':         { label: 'Tân Châu',   color: '#eab308' },
+// KV region groups – each group contains its districts
+const KV_GROUPS = {
+  KV5: {
+    label: 'KV5 – An Châu · An Phú · Châu Đốc · Châu Phú · Phú Tân · Tân Châu',
+    badgeColor: '#1d4ed8',
+    sheets: [
+      { key: 'KV5__ACU_OK', label: 'An Châu',   color: '#e63946' },
+      { key: 'KV5__APU_OK', label: 'An Phú',    color: '#3b82f6' },
+      { key: 'KV5__CĐC_OK', label: 'Châu Đốc', color: '#f97316' },
+      { key: 'KV5__CPU_OK', label: 'Châu Phú',  color: '#22c55e' },
+      { key: 'KV5__PTN_OK', label: 'Phú Tân',   color: '#a855f7' },
+      { key: 'KV5__TCU_OK', label: 'Tân Châu',  color: '#eab308' },
+    ]
+  },
+  KV6: {
+    label: 'KV6 – Chợ Mới · Long Xuyên · Thoại Sơn · Tịnh Biên · Tri Tôn',
+    badgeColor: '#065f46',
+    sheets: [
+      { key: 'KV6__CMI_OK', label: 'Chợ Mới',    color: '#06b6d4' },
+      { key: 'KV6__LXU_OK', label: 'Long Xuyên', color: '#10b981' },
+      { key: 'KV6__TSN_OK', label: 'Thoại Sơn',  color: '#f43f5e' },
+      { key: 'KV6__TBN_OK', label: 'Tịnh Biên',  color: '#84cc16' },
+      { key: 'KV6__TTN_OK', label: 'Tri Tôn',    color: '#fb923c' },
+    ]
+  },
 };
+
+// Flat lookup: sheet key → { label, color }
+const SHEET_CONFIG = {};
+Object.values(KV_GROUPS).forEach(grp =>
+  grp.sheets.forEach(s => { SHEET_CONFIG[s.key] = { label: s.label, color: s.color }; })
+);
 
 // ─────────────────────────────────────────────
 //  MAP INIT
@@ -768,81 +851,101 @@ function renderSidebar(data) {
   const legendEl = document.getElementById('map-legend');
   legendEl.innerHTML = '<h4>Chú Giải</h4>';
 
-  Object.entries(SHEET_CONFIG).forEach(([sheetName, cfg]) => {
-    if (sheetName === 'BẢNG TỔNG HỢP') return;
-    const rows    = data[sheetName] || [];
-    const visible = layerVisible[sheetName] !== false;
-    const color   = cfg.color;
+  Object.entries(KV_GROUPS).forEach(([kvKey, kvGroup]) => {
+    // ── KV region header in Sidebar ──
+    const kvHeader = document.createElement('div');
+    kvHeader.className = 'kv-group-header';
+    kvHeader.innerHTML = `
+      <div class="kv-badge" style="background:${kvGroup.badgeColor}">${kvKey}</div>
+      <div class="kv-title" title="${kvGroup.label}">${kvGroup.label}</div>
+    `;
+    container.appendChild(kvHeader);
 
-    // ── Legend entry ──
-    const lr = document.createElement('div');
-    lr.className = 'legend-row';
-    lr.innerHTML = `<div class="legend-dot" style="background:${color}"></div>
-      <div class="legend-line" style="background:${color};opacity:0.7"></div>
-      <span>${cfg.label}</span>`;
-    legendEl.appendChild(lr);
+    // ── KV region header in Legend ──
+    const legKv = document.createElement('div');
+    legKv.className = 'legend-kv';
+    legKv.textContent = kvKey;
+    legendEl.appendChild(legKv);
 
-    // ── District wrapper ──
-    const wrapper = document.createElement('div');
-    wrapper.className = 'district-wrapper';
+    // ── Districts under this KV ──
+    kvGroup.sheets.forEach(cfg => {
+      const sheetName = cfg.key;
+      // Skip if data doesn't exist for this district
+      if (!data[sheetName]) return;
+      
+      const rows    = data[sheetName];
+      const visible = layerVisible[sheetName] !== false;
+      const color   = cfg.color;
 
-    // ── Header (checkbox + dot + label + arrow) ──
-    const header = document.createElement('div');
-    header.className = 'district-header';
-    header.id = `district-header-${sheetName}`;
-    header.innerHTML = `
-      <div class="layer-checkbox ${visible ? 'checked' : ''}" id="chk-${sheetName}"
-           style="border-color:${color};background:${visible ? color : 'transparent'}"></div>
-      <div class="layer-dot" style="background:${color}"></div>
-      <div class="district-label">
-        <div class="district-name">${cfg.label}</div>
-        <div class="district-count">${rows.length} tuyến</div>
-      </div>
-      <span class="expand-arrow" id="arrow-${sheetName}">▶</span>`;
+      // ── Legend entry ──
+      const lr = document.createElement('div');
+      lr.className = 'legend-row';
+      lr.innerHTML = `<div class="legend-dot" style="background:${color}"></div>
+        <div class="legend-line" style="background:${color};opacity:0.7"></div>
+        <span>${cfg.label}</span>`;
+      legendEl.appendChild(lr);
 
-    // Checkbox click – toggle visibility
-    header.querySelector('.layer-checkbox').addEventListener('click', e => {
-      e.stopPropagation();
-      toggleLayer(sheetName, color);
-    });
+      // ── District wrapper ──
+      const wrapper = document.createElement('div');
+      wrapper.className = 'district-wrapper';
 
-    // Header click – expand/collapse sub-list
-    header.addEventListener('click', () => {
-      const body  = document.getElementById(`body-${sheetName}`);
-      const arrow = document.getElementById(`arrow-${sheetName}`);
-      body.classList.toggle('open');
-      arrow.classList.toggle('open');
-    });
-
-    wrapper.appendChild(header);
-
-    // ── Sub-list body ──
-    const body = document.createElement('div');
-    body.className = 'district-body';
-    body.id = `body-${sheetName}`;
-
-    rows.forEach((row, idx) => {
-      const locItem = document.createElement('div');
-      locItem.className = 'loc-item';
-
-      // Determine label: prefer tuyến name, fallback to địa điểm A
-      const title = row.tuyen || row.diem_a || `Tuyến ${row.stt || idx + 1}`;
-      const sub   = row.olt ? `OLT: ${row.olt}` : (row.diem_a || '');
-
-      locItem.innerHTML = `
-        <div class="loc-dot" style="background:${color}"></div>
-        <div class="loc-info">
-          <div class="loc-name" title="${title}">${title}</div>
-          <div class="loc-sub">${sub}</div>
+      // ── Header (checkbox + dot + label + arrow) ──
+      const header = document.createElement('div');
+      header.className = 'district-header';
+      header.id = `district-header-${sheetName}`;
+      header.innerHTML = `
+        <div class="layer-checkbox ${visible ? 'checked' : ''}" id="chk-${sheetName}"
+             style="border-color:${color};background:${visible ? color : 'transparent'}"></div>
+        <div class="layer-dot" style="background:${color}"></div>
+        <div class="district-label">
+          <div class="district-name">${cfg.label}</div>
+          <div class="district-count">${rows.length} tuyến</div>
         </div>
-        <span class="loc-ab" style="background:${color}">A→B</span>`;
+        <span class="expand-arrow" id="arrow-${sheetName}">▶</span>`;
 
-      locItem.addEventListener('click', () => flyToRow(sheetName, idx));
-      body.appendChild(locItem);
+      // Checkbox click – toggle visibility
+      header.querySelector('.layer-checkbox').addEventListener('click', e => {
+        e.stopPropagation();
+        toggleLayer(sheetName, color);
+      });
+
+      // Header click – expand/collapse sub-list
+      header.addEventListener('click', () => {
+        const body  = document.getElementById(`body-${sheetName}`);
+        const arrow = document.getElementById(`arrow-${sheetName}`);
+        body.classList.toggle('open');
+        arrow.classList.toggle('open');
+      });
+
+      wrapper.appendChild(header);
+
+      // ── Sub-list body ──
+      const body = document.createElement('div');
+      body.className = 'district-body';
+      body.id = `body-${sheetName}`;
+
+      rows.forEach((row, idx) => {
+        const locItem = document.createElement('div');
+        locItem.className = 'loc-item';
+
+        const title = row.tuyen || row.diem_a || `Tuyến ${row.stt || idx + 1}`;
+        const sub   = row.olt ? `OLT: ${row.olt}` : (row.diem_a || '');
+
+        locItem.innerHTML = `
+          <div class="loc-dot" style="background:${color}"></div>
+          <div class="loc-info">
+            <div class="loc-name" title="${title}">${title}</div>
+            <div class="loc-sub">${sub}</div>
+          </div>
+          <span class="loc-ab" style="background:${color}">A→B</span>`;
+
+        locItem.addEventListener('click', () => flyToRow(sheetName, idx));
+        body.appendChild(locItem);
+      });
+
+      wrapper.appendChild(body);
+      container.appendChild(wrapper);
     });
-
-    wrapper.appendChild(body);
-    container.appendChild(wrapper);
   });
 }
 
@@ -920,7 +1023,7 @@ document.getElementById('search-input').addEventListener('input', function() {
 function computeStats(data) {
   let total = 0, kmTotal = 0;
   Object.entries(data).forEach(([sh, rows]) => {
-    if (sh === 'BẢNG TỔNG HỢP') return;
+    if (!SHEET_CONFIG[sh]) return; // Skip "BẢNG TỔNG HỢP" or unknown sheets
     total += rows.length;
     rows.forEach(r => { if (r.cap_6fo) kmTotal += Number(r.cap_6fo); });
   });
@@ -948,14 +1051,14 @@ toggleBtn.addEventListener('click', () => {
 fetch('map_data.json')
   .then(r => r.json())
   .then(data => {
-    // Flatten for search
+    // Flatten for search (only registered sheets)
     Object.entries(data).forEach(([sh, rows]) => {
+      if (!SHEET_CONFIG[sh]) return;
       rows.forEach(r => { r._sheet = sh; allRows.push(r); });
     });
 
     // Build layers – marker cố định, không gom cụm
     Object.entries(SHEET_CONFIG).forEach(([sheetName]) => {
-      if (sheetName === 'BẢNG TỔNG HỢP') return;
       const rows = data[sheetName] || [];
       const grp = buildLayerForSheet(sheetName, rows);
       layerGroups[sheetName] = grp;
