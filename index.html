@@ -531,6 +531,44 @@
       border-color: var(--accent);
     }
 
+    /* Locate Button */
+    #locate-btn {
+      position: absolute;
+      top: 80px;
+      left: 10px;
+      z-index: 500;
+      background: var(--bg-panel);
+      border: 2px solid rgba(0,0,0,0.2);
+      border-radius: 4px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--text-main);
+      cursor: pointer;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      transition: background 0.2s;
+    }
+    #locate-btn:hover { background: var(--bg-hover); }
+
+    /* Pulsing user location marker */
+    .user-loc-marker {
+      background-color: #3b82f6; 
+      width: 14px; 
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+
     /* ── RESPONSIVE MOBILE ── */
     @media (max-width: 768px) {
       #sidebar { display: none !important; }
@@ -597,6 +635,9 @@
 
   <!-- Map container -->
   <div id="map"></div>
+
+  <!-- Locate Button -->
+  <button id="locate-btn" title="Vị trí của tôi" onclick="locateUser()">📍</button>
 
   <!-- Basemap switcher -->
   <div id="basemap-switcher">
@@ -697,6 +738,32 @@ function switchBasemap(name) {
 map.on('mousemove', e => {
   document.getElementById('status-coords').textContent =
     `Lat: ${e.latlng.lat.toFixed(6)} · Lng: ${e.latlng.lng.toFixed(6)}`;
+});
+
+// ─────────────────────────────────────────────
+//  USER LOCATION (GPS)
+// ─────────────────────────────────────────────
+let userMarker = null;
+
+function locateUser() {
+  map.locate({ setView: true, maxZoom: 16 });
+}
+
+map.on('locationfound', function(e) {
+  if (userMarker) {
+    map.removeLayer(userMarker);
+  }
+  const icon = L.divIcon({
+    className: 'user-loc-marker',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+  userMarker = L.marker(e.latlng, { icon: icon }).addTo(map)
+    .bindPopup('<b>Vị trí hiện tại của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm').openPopup();
+});
+
+map.on('locationerror', function(e) {
+  alert("Không thể tìm thấy vị trí của bạn. Vui lòng bật vị trí (GPS) và thử lại.\nLỗi: " + e.message);
 });
 
 // ─────────────────────────────────────────────
