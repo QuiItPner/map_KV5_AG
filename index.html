@@ -757,22 +757,19 @@ let isTracking = false;
 
 function locateUser() {
   if (!isTracking) {
-    // First click: start continuous tracking & center map
-    map.locate({ watch: true, setView: true, maxZoom: 16, enableHighAccuracy: true });
+    // Start tracking in background WITHOUT locking the view
+    map.locate({ watch: true, setView: false, enableHighAccuracy: true });
     isTracking = true;
-    // highlight the button to show tracking is active
     document.querySelector('.leaflet-control-locate').style.color = 'var(--accent)';
-  } else {
-    // Already tracking: just pan view back to user's real-time position
-    if (userMarker) {
-      map.flyTo(userMarker.getLatLng(), Math.max(map.getZoom(), 16), { duration: 0.5 });
-    }
+  } else if (userMarker) {
+    // If already tracking and button clicked, manually center on user
+    map.flyTo(userMarker.getLatLng(), Math.max(map.getZoom(), 16), { duration: 0.5 });
   }
 }
 
 map.on('locationfound', function(e) {
   if (!userMarker) {
-    // create marker on first find
+    // Create marker on first find
     const icon = L.divIcon({
       className: 'user-loc-marker',
       iconSize: [14, 14],
@@ -780,8 +777,11 @@ map.on('locationfound', function(e) {
     });
     userMarker = L.marker(e.latlng, { icon: icon }).addTo(map)
       .bindPopup('<b>Vị trí của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm');
+      
+    // Pan to user only on the very first GPS fix
+    map.flyTo(e.latlng, 16, { duration: 0.5 });
   } else {
-    // smoothly update marker position while user is moving
+    // Smoothly update marker position while user is moving
     userMarker.setLatLng(e.latlng);
     userMarker.setPopupContent('<b>Vị trí của bạn</b><br>Sai số: ' + Math.round(e.accuracy) + 'm');
   }
