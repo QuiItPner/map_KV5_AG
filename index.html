@@ -445,13 +445,36 @@
       padding: 12px 14px;
       z-index: 500;
       min-width: 160px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .map-legend.collapsed {
+      padding-bottom: 12px; /* adjust for closed state if needed */
+    }
+    .legend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
     }
     .map-legend h4 {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      margin: 0;
+    }
+    .legend-toggle {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .legend-body {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .map-legend.collapsed .legend-body {
+      display: none;
     }
     .legend-row {
       display: flex;
@@ -530,6 +553,16 @@
       .stat-badge .lbl { margin-top: 0; }
       #status-bar { left: 10px; bottom: 10px; right: 10px; justify-content: center; border-radius: 8px; }
       #basemap-switcher { flex-wrap: wrap; padding-left: 10px; }
+      .map-legend {
+        bottom: 50px;
+        right: 10px;
+        padding: 8px 10px;
+        min-width: 130px;
+      }
+      .legend-row { font-size: 11px; margin-bottom: 4px; gap: 6px; }
+      .legend-kv { font-size: 10px; margin: 6px 0 2px; }
+      .legend-dot { width: 12px; height: 12px; }
+      .legend-line { width: 20px; height: 2px; }
     }
   </style>
 </head>
@@ -849,7 +882,20 @@ function renderSidebar(data) {
   container.innerHTML = '';
 
   const legendEl = document.getElementById('map-legend');
-  legendEl.innerHTML = '<h4>Chú Giải</h4>';
+  legendEl.innerHTML = `
+    <div class="legend-header" id="legend-header">
+      <h4>Chú Giải</h4>
+      <span class="legend-toggle" id="legend-toggle">▼</span>
+    </div>
+    <div class="legend-body" id="legend-body"></div>
+  `;
+  const legendBody = document.getElementById('legend-body');
+
+  document.getElementById('legend-header').addEventListener('click', () => {
+    legendEl.classList.toggle('collapsed');
+    const toggle = document.getElementById('legend-toggle');
+    toggle.textContent = legendEl.classList.contains('collapsed') ? '▲' : '▼';
+  });
 
   Object.entries(KV_GROUPS).forEach(([kvKey, kvGroup]) => {
     // ── KV region header in Sidebar ──
@@ -865,7 +911,7 @@ function renderSidebar(data) {
     const legKv = document.createElement('div');
     legKv.className = 'legend-kv';
     legKv.textContent = kvKey;
-    legendEl.appendChild(legKv);
+    legendBody.appendChild(legKv);
 
     // ── Districts under this KV ──
     kvGroup.sheets.forEach(cfg => {
@@ -883,7 +929,7 @@ function renderSidebar(data) {
       lr.innerHTML = `<div class="legend-dot" style="background:${color}"></div>
         <div class="legend-line" style="background:${color};opacity:0.7"></div>
         <span>${cfg.label}</span>`;
-      legendEl.appendChild(lr);
+      legendBody.appendChild(lr);
 
       // ── District wrapper ──
       const wrapper = document.createElement('div');
